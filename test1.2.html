@@ -1,0 +1,1515 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finger Frame Studio - จับปลายนิ้วลากฟิลเตอร์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06080f;
+    --card-bg: rgba(13, 19, 33, 0.78);
+    --card-border: rgba(255, 255, 255, 0.14);
+    --ink: #f0f4fc;
+    --ink-dim: #94a3b8;
+    --cyan: #00f2fe;
+    --cyan-glow: rgba(0, 242, 254, 0.35);
+    --hot: #ff0055;
+    --amber: #ffb703;
+    --green: #10b981;
+    --purple: #8b5cf6;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Prompt', 'Inter', system-ui, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: default;
+  }
+  canvas.dragging {
+    cursor: grabbing !important;
+  }
+
+  /* Start Screen Overlay */
+  #start {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, #111a2e 0%, #06080f 80%);
+    text-align: center;
+    padding: 24px;
+    z-index: 100;
+  }
+  .start-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 36px 32px;
+    max-width: 580px;
+    width: 100%;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.65), 0 0 40px rgba(0, 242, 254, 0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    animation: fadeIn .6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 242, 254, 0.1);
+    color: var(--cyan);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+  }
+  .logo-badge span {
+    width: 8px;
+    height: 8px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--cyan);
+    animation: pulse 1.8s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .4; transform: scale(0.75); }
+  }
+  #start h1 {
+    margin: 0;
+    font-size: clamp(28px, 4.5vw, 42px);
+    font-weight: 700;
+    line-height: 1.2;
+    background: linear-gradient(135deg, #ffffff 40%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  #start p {
+    margin: 0;
+    color: var(--ink-dim);
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 46ch;
+  }
+  .guide-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    margin: 6px 0;
+  }
+  .guide-item {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .guide-item .title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .guide-item .desc {
+    font-size: 12px;
+    color: var(--ink-dim);
+    line-height: 1.4;
+  }
+  .actions-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  #go {
+    background: linear-gradient(135deg, #ff0055 0%, #ff5500 100%);
+    border: none;
+    font-weight: 700;
+    font-size: 17px;
+    padding: 15px 28px;
+    border-radius: 14px;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(255, 0, 85, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.2);
+    transition: all .2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  #go:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(255, 0, 85, 0.55), 0 0 20px rgba(255, 0, 85, 0.3);
+  }
+  #go:active {
+    transform: translateY(1px);
+  }
+  #demo-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 11px 20px;
+    border-radius: 12px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  #demo-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  #msg {
+    min-height: 1.4em;
+    font-size: 13px;
+    color: #ff8b94;
+    text-align: center;
+  }
+
+  /* HUD Top Bar */
+  #top-hud {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 50;
+    pointer-events: none;
+  }
+  .hud-badge {
+    pointer-events: auto;
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    padding: 7px 15px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #64748b;
+  }
+  .status-dot.active {
+    background: var(--green);
+    box-shadow: 0 0 10px var(--green);
+  }
+  .status-dot.grabbing {
+    background: var(--amber);
+    box-shadow: 0 0 12px var(--amber);
+    animation: pulse .5s infinite;
+  }
+  .hud-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
+  }
+  .icon-btn {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--card-border);
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 16px;
+    transition: all .2s;
+  }
+  .icon-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+  }
+  .icon-btn.active {
+    background: var(--cyan);
+    color: #06080f;
+    border-color: var(--cyan);
+  }
+
+  /* HUD Bottom Floating Bar */
+  #bar {
+    position: fixed;
+    left: 14px;
+    bottom: 14px;
+    right: 14px;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 50;
+    pointer-events: none;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    pointer-events: auto;
+  }
+  .pill-group {
+    background: var(--card-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  .pill-group button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-dim);
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all .18s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pill-group button:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.09);
+  }
+  .pill-group button.on {
+    background: #fff;
+    color: #080c14;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.25);
+  }
+  .pill-group button.cyan-on.on {
+    background: var(--cyan);
+    color: #040914;
+    font-weight: 600;
+    box-shadow: 0 4px 14px var(--cyan-glow);
+  }
+  #hint {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 13px;
+    color: var(--ink);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #hint .hint-icon {
+    font-size: 15px;
+  }
+
+  /* Flash overlay for snapshot */
+  #flash {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 200;
+    transition: opacity .4s ease;
+  }
+  #flash.flash-active {
+    opacity: 0.85;
+    transition: opacity .05s ease;
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .start-card { padding: 24px 20px; }
+    .guide-grid { grid-template-columns: 1fr; }
+    .pill-group { padding: 4px; }
+    .pill-group button { padding: 6px 11px; font-size: 12px; }
+    #hint { font-size: 12px; padding: 6px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="flash"></div>
+
+<!-- Start / Welcome Screen -->
+<div id="start">
+  <div class="start-card">
+    <div class="logo-badge">
+      <span></span> AI Vision Studio
+    </div>
+    <h1>จับปลายนิ้ว ลากฟิลเตอร์</h1>
+    <p>เปิดกล้องแล้วระบบจะตรวจจับปลายนิ้วแบบเรียลไทม์ คุณสามารถใช้นิ้วชี้หรือจีบนิ้วเพื่อจับลากกล่องเอฟเฟกต์ฟิลเตอร์ไปรอบจอได้อย่างอิสระ!</p>
+
+    <div class="guide-grid">
+      <div class="guide-item">
+        <span class="title">👌 จีบนิ้วจับลาก (แนะนำ)</span>
+        <span class="desc">นำปลายนิ้วโป้งและชี้มาแตะกันค้างไว้เพื่อ "หยิบจับ" แล้วลากกล่องฟิลเตอร์</span>
+      </div>
+      <div class="guide-item">
+        <span class="title">🔄 แตะเร็ว ๆ เปลี่ยนฟิลเตอร์</span>
+        <span class="desc">แตะนิ้วโป้งกับนิ้วชี้ให้โดนกันแล้วปล่อยทันที ฟิลเตอร์จะเปลี่ยนไปแบบถัดไป</span>
+      </div>
+      <div class="guide-item">
+        <span class="title">👐 ขึงกรอบ 2 มือ</span>
+        <span class="desc">ชูนิ้วชี้ 2 ข้างพร้อมกันเพื่อกำหนดขนาดมุมบน-ล่างของกรอบ</span>
+      </div>
+      <div class="guide-item">
+        <span class="title">🖱️ เมาส์ / ทัชสกรีน</span>
+        <span class="desc">คลิกลากกล่อง หรือลากมุมขวาล่างเพื่อปรับขนาดได้ตลอดเวลา</span>
+      </div>
+      <div class="guide-item">
+        <span class="title">📌 ชี้นิ้วเดียวค้างนิ่ง</span>
+        <span class="desc">พับนิ้วกลาง นาง ก้อยลง ชี้นิ้วเดียวค้างนิ่งสักครู่ ฟิลเตอร์จะถูกปักค้างไว้ในจอ</span>
+      </div>
+      <div class="guide-item">
+        <span class="title">✊ กำมือ 1 ข้าง</span>
+        <span class="desc">กำมือค้างไว้สักครู่ เพื่อล้างฟิลเตอร์ที่ปักไว้ทั้งหมดในจอ</span>
+      </div>
+    </div>
+
+    <div class="actions-group">
+      <button id="go">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        เปิดกล้องทันที
+      </button>
+      <button id="demo-btn" type="button">ลองโหมดทดสอบ (ไม่ต้องใช้กล้อง)</button>
+    </div>
+
+    <div id="msg" role="alert"></div>
+  </div>
+</div>
+
+<!-- HUD Top Bar -->
+<div id="top-hud">
+  <div class="hud-badge">
+    <div id="status-indicator" class="status-dot"></div>
+    <span id="status-text">กำลังรอกล้อง...</span>
+  </div>
+  <div class="hud-right">
+    <button id="mirror-btn" class="icon-btn active" title="พลิกภาพซ้าย-ขวา (Mirror)">🪞</button>
+    <button id="sound-btn" class="icon-btn active" title="เปิด/ปิดเสียงเอฟเฟกต์ (Sound)">🔊</button>
+    <button id="snap-btn" class="icon-btn" title="ถ่ายภาพบันทึก (Snapshot)">📸</button>
+    <button id="fs-btn" class="icon-btn" title="เต็มจอ (Fullscreen)">⛶</button>
+  </div>
+</div>
+
+<!-- HUD Bottom Controls Bar -->
+<div id="bar">
+  <!-- Controls Row 1: Drag Mode & Size -->
+  <div class="bar-row">
+    <div class="pill-group">
+      <span style="font-size:11px; padding:0 8px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:1px; font-weight:700;">การลาก:</span>
+      <button id="mode-pinch" class="cyan-on on" data-drag="pinch">👌 จีบนิ้วจับลาก</button>
+      <button id="mode-follow" class="cyan-on" data-drag="follow">☝️ เลื่อนตามนิ้วชี้</button>
+      <button id="mode-twohand" class="cyan-on" data-drag="twohand">👐 ขึงกรอบ 2 มือ</button>
+    </div>
+
+    <div class="pill-group">
+      <span style="font-size:11px; padding:0 8px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:1px; font-weight:700;">ขนาด:</span>
+      <button id="sz-s" data-sz="s">เล็ก</button>
+      <button id="sz-m" class="on" data-sz="m">กลาง</button>
+      <button id="sz-l" data-sz="l">ใหญ่</button>
+    </div>
+
+    <div class="pill-group">
+      <button id="pin-btn" type="button">📌 ปักฟิลเตอร์</button>
+      <button id="clear-btn" type="button">🧹 ล้าง (0)</button>
+    </div>
+  </div>
+
+  <!-- Controls Row 2: Filters -->
+  <div class="bar-row">
+    <div class="pill-group">
+      <button data-m="0" class="on">1 ฮาล์ฟโทน</button>
+      <button data-m="1">2 ลายเส้นสแกน</button>
+      <button data-m="2">3 พิกเซล 8-Bit</button>
+      <button data-m="3">4 เทอร์มอลกลิตช์</button>
+      <button data-m="4">5 ไซเบอร์เมทริกซ์</button>
+      <button data-m="5">6 RGB สปลิต</button>
+      <button id="auto" style="border-left:1px solid rgba(255,255,255,0.15); border-radius:0;">สลับอัตโนมัติ</button>
+      <button id="pan">แผงซ้อน</button>
+    </div>
+
+    <div id="hint">
+      <span class="hint-icon">✨</span>
+      <span id="hint-text">กำลังโหลดตัวจับมือ AI… (ลากเมาส์ขยับกรอบได้)</span>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+const $ = s => document.querySelector(s);
+const cv = $('#c'), ctx = cv.getContext('2d');
+const vid = document.createElement('video');
+vid.playsInline = true; vid.muted = true;
+let isDemoMode = false, demoTime = 0;
+
+// Canvas layers
+const base = document.createElement('canvas'), bctx = base.getContext('2d');
+const sc = document.createElement('canvas'), sctx = sc.getContext('2d', { willReadFrequently: true });
+const ec = document.createElement('canvas'), ectx = ec.getContext('2d');
+
+let W = 0, H = 0;
+let mode = 0; // Filter index: 0..5
+let auto = false, panels = false, lastSwitch = 0;
+let mirror = true;
+let soundEnabled = true;
+
+// Drag mode: 'pinch' | 'follow' | 'twohand'
+let dragMode = 'pinch';
+
+// Box geometry (normalized 0 to 1)
+let rect = { x: 0.32, y: 0.22, w: 0.36, h: 0.46 };
+let target = { ...rect };
+
+// Mouse / pointer interaction state
+let mouseUntil = 0;
+let pointerDrag = null; // { type: 'move'|'resize', startX, startY, origTarget }
+
+// Hand tracking state
+let landmarker = null;
+let lastVideoTime = -1;
+let handsData = []; // Array of detected hands landmarks
+let isHandDragging = false;
+let handDragOffset = { x: 0, y: 0 };
+let pinchProgress = 0; // 0 (open) to 1 (pinched)
+let lastGrabSoundTime = 0;
+
+// จีบนิ้วแตะเร็ว ๆ = เปลี่ยนฟิลเตอร์
+let pinchStart = null, wasPinching = false;
+const TAP_MS = 450; // แตะนานไม่เกินนี้ถือว่าเป็นการแตะ (ปรับได้)
+function nextFilter() {
+  mode = (mode + 1) % 6;
+  auto = false;
+  syncBtns();
+  playBeep('switch');
+}
+function pinchOf(h) {
+  const i = toCanvas(h[8].x, h[8].y), t = toCanvas(h[4].x, h[4].y);
+  const w = toCanvas(h[0].x, h[0].y), k = toCanvas(h[5].x, h[5].y);
+  const th = Math.max(34, Math.min(80, Math.hypot(k[0] - w[0], k[1] - w[1]) * 0.42));
+  return Math.hypot(t[0] - i[0], t[1] - i[1]) < th;
+}
+
+// ----- ท่ามือ: ชี้ค้างนิ่ง = ปักฟิลเตอร์ไว้ในจอ | กำมือ = ล้างฟิลเตอร์ที่ปักทั้งหมด -----
+const pinned = [];            // ฟิลเตอร์ที่ปักค้างไว้ {m,x,y,w,h}
+const MAX_PINNED = 4;         // ปักได้สูงสุด (เกินแล้วอันเก่าสุดจะหลุด)
+const HOLD_PIN_MS = 800;      // ชี้ค้างนิ่งนานเท่านี้ถึงจะปัก (ปรับได้)
+const HOLD_FIST_MS = 600;     // กำมือค้างนานเท่านี้ถึงจะล้าง (ปรับได้)
+let gest = { kind: null, t: 0, ref: null, latched: false, prog: 0, at: [0, 0] };
+
+function fingerRatio(h, tip, pip) {   // ปลายนิ้วอยู่ไกลข้อมือแค่ไหนเทียบกับข้อกลางนิ้ว
+  const w = toCanvas(h[0].x, h[0].y), t = toCanvas(h[tip].x, h[tip].y), q = toCanvas(h[pip].x, h[pip].y);
+  return Math.hypot(t[0] - w[0], t[1] - w[1]) / (Math.hypot(q[0] - w[0], q[1] - w[1]) || 1);
+}
+function handPose(h) {
+  const curled = v => v < 1.1;
+  const m = fingerRatio(h, 12, 10), r = fingerRatio(h, 16, 14), p = fingerRatio(h, 20, 18);
+  if (!(curled(m) && curled(r) && curled(p))) return null;   // กลาง นาง ก้อย ต้องพับลง
+  const i = fingerRatio(h, 8, 6);
+  if (i > 1.4) return 'point';   // นิ้วชี้ชี้ออก
+  if (curled(i)) return 'fist';  // ชี้พับด้วย = กำมือ
+  return null;
+}
+function pinCurrent() {
+  if (pinned.length >= MAX_PINNED) pinned.shift();
+  pinned.push({ m: mode, x: rect.x, y: rect.y, w: rect.w, h: rect.h });
+  addParticles(rect.x * W + rect.w * W / 2, rect.y * H + rect.h * H / 2, '#10b981', 16);
+  playBeep('grab'); syncBtns();
+}
+function clearPinned() {
+  if (pinned.length) addParticles(gest.at[0] || W / 2, gest.at[1] || H / 2, '#ff0055', 18);
+  pinned.length = 0;
+  playBeep('release'); syncBtns();
+}
+function updateGestures(tNow) {
+  let kind = null, hand = null;
+  for (const h of handsData) {
+    const ps = handPose(h);
+    if (ps === 'fist') { kind = 'fist'; hand = h; break; }
+    if (ps === 'point' && !pinchOf(h) && !kind) { kind = 'point'; hand = h; }
+  }
+  if (!kind) { gest.kind = null; gest.prog = 0; gest.latched = false; return; }
+  if (gest.kind !== kind) {
+    gest.kind = kind; gest.t = tNow; gest.latched = false;
+    gest.ref = { x: target.x, y: target.y, w: target.w, h: target.h };
+  }
+  gest.at = toCanvas(hand[8].x, hand[8].y);
+  if (kind === 'point') {                 // ต้องค้างนิ่ง ถ้ากรอบขยับมากให้เริ่มนับใหม่
+    const moved = Math.abs(target.x - gest.ref.x) + Math.abs(target.y - gest.ref.y) +
+                  Math.abs(target.w - gest.ref.w) + Math.abs(target.h - gest.ref.h);
+    if (moved > 0.05) { gest.t = tNow; gest.ref = { x: target.x, y: target.y, w: target.w, h: target.h }; }
+  }
+  if (gest.latched) { gest.prog = 1; return; }
+  gest.prog = Math.min(1, (tNow - gest.t) / (kind === 'point' ? HOLD_PIN_MS : HOLD_FIST_MS));
+  if (gest.prog >= 1) {
+    gest.latched = true;                  // ทำครั้งเดียว ต้องเปลี่ยนท่าก่อนถึงจะทำซ้ำได้
+    if (kind === 'point') pinCurrent(); else clearPinned();
+  }
+}
+
+// Particle burst effects
+const particles = [];
+function addParticles(x, y, color = '#00f2fe', count = 12) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 5;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: 0.03 + Math.random() * 0.04,
+      color,
+      size: 2 + Math.random() * 3
+    });
+  }
+}
+
+// ----------------- Sound Synthesizer (Web Audio API) -----------------
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) audioCtx = new AudioContext();
+  }
+}
+function playBeep(type = 'grab') {
+  if (!soundEnabled || !audioCtx) return;
+  try {
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'grab') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(420, now);
+      osc.frequency.exponentialRampToValueAtTime(840, now + 0.1);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+      osc.start(now); osc.stop(now + 0.12);
+    } else if (type === 'release') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(750, now);
+      osc.frequency.exponentialRampToValueAtTime(380, now + 0.1);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+      osc.start(now); osc.stop(now + 0.12);
+    } else if (type === 'switch') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(560, now);
+      osc.frequency.setValueAtTime(780, now + 0.05);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      osc.start(now); osc.stop(now + 0.1);
+    } else if (type === 'shutter') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(240, now);
+      osc.frequency.setValueAtTime(120, now + 0.06);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now); osc.stop(now + 0.15);
+    }
+  } catch (e) {}
+}
+
+// ----------------- Resize Handler -----------------
+function resize() {
+  W = cv.width = base.width = innerWidth;
+  H = cv.height = base.height = innerHeight;
+}
+addEventListener('resize', resize);
+resize();
+
+// ----------------- Color LUT (Thermal Effect) -----------------
+const LUT = (() => {
+  const st = [
+    [0, 20, 0, 60],
+    [.2, 0, 50, 180],
+    [.4, 0, 200, 255],
+    [.6, 255, 40, 220],
+    [.75, 255, 110, 150],
+    [.9, 255, 200, 60],
+    [1, 255, 245, 120]
+  ];
+  const a = new Uint8Array(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255;
+    let k = 0;
+    while (k < st.length - 2 && t > st[k+1][0]) k++;
+    const [t0,r0,g0,b0] = st[k], [t1,r1,g1,b1] = st[k+1];
+    const u = Math.min(1, Math.max(0, (t - t0) / (t1 - t0)));
+    a[i*3] = r0 + (r1-r0)*u;
+    a[i*3+1] = g0 + (g1-g0)*u;
+    a[i*3+2] = b0 + (b1-b0)*u;
+  }
+  return a;
+})();
+
+// ----------------- Filter Processing Engine -----------------
+function effect(m, rx, ry, rw, rh) {
+  rx = Math.max(0, rx | 0);
+  ry = Math.max(0, ry | 0);
+  rw = Math.min(W - rx, rw | 0);
+  rh = Math.min(H - ry, rh | 0);
+  if (rw < 16 || rh < 16) return;
+
+  const s = Math.min(1, 480 / Math.max(rw, rh));
+  const ew = Math.max(8, (rw * s) | 0), eh = Math.max(8, (rh * s) | 0);
+
+  if (sc.width !== ew || sc.height !== eh) {
+    sc.width = ew; sc.height = eh;
+    ec.width = ew; ec.height = eh;
+  }
+  sctx.drawImage(base, rx, ry, rw, rh, 0, 0, ew, eh);
+  const src = sctx.getImageData(0, 0, ew, eh).data;
+  const img = ectx.createImageData(ew, eh), o = img.data;
+  const lum = i => (src[i] * 0.299 + src[i+1] * 0.587 + src[i+2] * 0.114) / 255;
+
+  if (m === 0) {
+    // 0: Halftone Hexagonal Dots
+    const c = 8, rowH = c * 0.866;
+    for (let y = 0; y < eh; y++) {
+      const row = Math.round(y / rowH), cy = row * rowH, off = (row & 1) ? c / 2 : 0;
+      const sy = Math.min(eh - 1, cy | 0);
+      for (let x = 0; x < ew; x++) {
+        const cx = Math.round((x - off) / c) * c + off;
+        const l = lum((sy * ew + Math.min(ew - 1, Math.max(0, cx | 0))) * 4);
+        const r = c * 0.72 * Math.pow(1 - l, 0.8), dx = x - cx, dy = y - cy;
+        const i = (y * ew + x) * 4, dot = (dx * dx + dy * dy) < (r * r);
+        o[i] = dot ? 230 : 255;
+        o[i+1] = dot ? 10 : 230;
+        o[i+2] = dot ? 60 : 30;
+        o[i+3] = 255;
+      }
+    }
+  } else if (m === 1) {
+    // 1: Diagonal Cyber Scanlines
+    const P = 10;
+    for (let y = 0; y < eh; y++) {
+      for (let x = 0; x < ew; x++) {
+        const i = (y * ew + x) * 4, l = lum(i), w = 0.08 + 0.84 * Math.pow(l, 0.9);
+        const white = ((x + y) % P) / P < w;
+        o[i] = white ? 245 : 20;
+        o[i+1] = white ? 250 : 50;
+        o[i+2] = white ? 255 : 95;
+        o[i+3] = 255;
+      }
+    }
+  } else if (m === 2) {
+    // 2: Retro 8-bit Pixelate
+    const b = 12;
+    for (let y = 0; y < eh; y++) {
+      for (let x = 0; x < ew; x++) {
+        const j = (Math.min(eh - 1, ((y / b | 0) * b + b / 2 | 0)) * ew +
+                   Math.min(ew - 1, ((x / b | 0) * b + b / 2 | 0))) * 4;
+        const i = (y * ew + x) * 4;
+        o[i] = ((src[j] / 40 | 0) * 42);
+        o[i+1] = ((src[j+1] / 40 | 0) * 42);
+        o[i+2] = ((src[j+2] / 40 | 0) * 46);
+        o[i+3] = 255;
+      }
+    }
+  } else if (m === 3) {
+    // 3: Thermal Infrared + RGB Glitch Bands
+    const bands = [0, 1, 2].map(() => [Math.random() * eh | 0, 4 + Math.random() * 12 | 0, (Math.random() - 0.5) * 22 | 0]);
+    const sh = Math.random() < 0.4 ? 1 : 0;
+    for (let y = 0; y < eh; y++) {
+      let d = 0;
+      if (sh) for (const [by, bh, bs] of bands) if (y >= by && y < by + bh) d = bs;
+      for (let x = 0; x < ew; x++) {
+        const xx = Math.min(ew - 1, Math.max(0, x + d)), i = (y * ew + x) * 4, row = y * ew * 4;
+        const lr = lum(row + Math.max(0, xx - 3) * 4) * 255 | 0;
+        const lg = lum(row + xx * 4) * 255 | 0;
+        const lb = lum(row + Math.min(ew - 1, xx + 3) * 4) * 255 | 0;
+        o[i] = LUT[lr * 3];
+        o[i+1] = LUT[lg * 3 + 1];
+        o[i+2] = LUT[lb * 3 + 2];
+        o[i+3] = 255;
+      }
+    }
+  } else if (m === 4) {
+    // 4: Cyber Matrix Edge Glow (Green / Cyan Neon Edges)
+    for (let y = 1; y < eh - 1; y++) {
+      for (let x = 1; x < ew - 1; x++) {
+        const i = (y * ew + x) * 4;
+        const left = lum((y * ew + (x - 1)) * 4);
+        const right = lum((y * ew + (x + 1)) * 4);
+        const top = lum(((y - 1) * ew + x) * 4);
+        const bot = lum(((y + 1) * ew + x) * 4);
+        const edge = Math.min(1, Math.abs(right - left) + Math.abs(bot - top)) * 2.2;
+        o[i] = (edge * 20) | 0;
+        o[i+1] = (edge * 255) | 0;
+        o[i+2] = (edge * 190) | 0;
+        o[i+3] = 255;
+      }
+    }
+  } else {
+    // 5: RGB Split / VHS Chromatic Aberration
+    const shift = 6;
+    for (let y = 0; y < eh; y++) {
+      const scan = (y % 3 === 0) ? 0.75 : 1.0;
+      for (let x = 0; x < ew; x++) {
+        const i = (y * ew + x) * 4;
+        const rIdx = (y * ew + Math.min(ew - 1, x + shift)) * 4;
+        const bIdx = (y * ew + Math.max(0, x - shift)) * 4;
+        o[i] = (src[rIdx] * scan) | 0;
+        o[i+1] = (src[i+1] * scan) | 0;
+        o[i+2] = (src[bIdx+2] * scan) | 0;
+        o[i+3] = 255;
+      }
+    }
+  }
+
+  ectx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(ec, rx, ry, rw, rh);
+}
+
+// ----------------- Coordinate Transformation -----------------
+function toCanvas(nx, ny) {
+  const vw = vid.videoWidth || 1280;
+  const vh = vid.videoHeight || 720;
+  const k = Math.max(W / vw, H / vh);
+  if (mirror) {
+    return [W - ((W - vw * k) / 2 + nx * vw * k), (H - vh * k) / 2 + ny * vh * k];
+  } else {
+    return [(W - vw * k) / 2 + nx * vw * k, (H - vh * k) / 2 + ny * vh * k];
+  }
+}
+
+// ----------------- Hand Tracking & Gesture Processing -----------------
+function processHands() {
+  if (!landmarker || performance.now() < mouseUntil) return;
+  if (!isDemoMode && vid.currentTime === lastVideoTime) return;
+  lastVideoTime = vid.currentTime;
+
+  try {
+    const results = landmarker.detectForVideo(vid, performance.now());
+    handsData = results.landmarks || [];
+  } catch (err) {
+    return;
+  }
+
+  const statusText = $('#status-text');
+  const statusDot = $('#status-indicator');
+  const hintText = $('#hint-text');
+
+  if (handsData.length === 0) {
+    statusDot.className = 'status-dot active';
+    statusText.textContent = 'พร้อมตรวจจับ (ชูมือขึ้นมา)';
+    hintText.textContent = 'ยกมือขึ้นมาหน้ากล้องเพื่อเริ่มจับปลายนิ้ว';
+    isHandDragging = false;
+    pinchProgress = 0;
+    wasPinching = false;
+    pinchStart = null;
+    gest.kind = null; gest.prog = 0; gest.latched = false;
+    return;
+  }
+
+  statusDot.className = 'status-dot active';
+  statusText.textContent = `ตรวจพบ ${handsData.length} มือ`;
+
+  // แตะจีบนิ้วเร็ว ๆ = เปลี่ยนฟิลเตอร์
+  const nowP = handsData.some(pinchOf), tNow = performance.now();
+  if (nowP && !wasPinching) pinchStart = { t: tNow, x: target.x, y: target.y, w: target.w, h: target.h };
+  if (!nowP && wasPinching && pinchStart && tNow - pinchStart.t < TAP_MS) {
+    const { x, y, w, h } = pinchStart;
+    Object.assign(target, { x, y, w, h }); // ดึงกรอบกลับที่เดิม
+    isHandDragging = false;
+    nextFilter();
+  }
+  wasPinching = nowP;
+  updateGestures(tNow);
+
+  const boxPixel = {
+    x: rect.x * W,
+    y: rect.y * H,
+    w: rect.w * W,
+    h: rect.h * H
+  };
+
+  // Check Two-Hand Framing Mode
+  if (dragMode === 'twohand' || (handsData.length >= 2 && dragMode !== 'follow')) {
+    if (handsData.length >= 2) {
+      const p1 = toCanvas(handsData[0][8].x, handsData[0][8].y);
+      const p2 = toCanvas(handsData[1][8].x, handsData[1][8].y);
+      target.x = Math.max(0, Math.min(W - 80, Math.min(p1[0], p2[0]))) / W;
+      target.y = Math.max(0, Math.min(H - 80, Math.min(p1[1], p2[1]))) / H;
+      target.w = Math.max(0.12, Math.abs(p1[0] - p2[0]) / W);
+      target.h = Math.max(0.12, Math.abs(p1[1] - p2[1]) / H);
+
+      hintText.textContent = '👐 ขึงกรอบด้วยนิ้วชี้ 2 ข้างสำเร็จ';
+      return;
+    }
+  }
+
+  // 1-Hand Interaction: Primary Hand (Hand 0)
+  const primaryHand = handsData[0];
+  const indexPt = toCanvas(primaryHand[8].x, primaryHand[8].y); // Index tip
+  const thumbPt = toCanvas(primaryHand[4].x, primaryHand[4].y); // Thumb tip
+  const wristPt = toCanvas(primaryHand[0].x, primaryHand[0].y); // Wrist
+  const knucklePt = toCanvas(primaryHand[5].x, primaryHand[5].y); // Index MCP
+
+  // Dynamic hand scale estimation
+  const handScale = Math.hypot(knucklePt[0] - wristPt[0], knucklePt[1] - wristPt[1]);
+  const pinchThreshold = Math.max(34, Math.min(80, handScale * 0.42));
+  const pinchDist = Math.hypot(thumbPt[0] - indexPt[0], thumbPt[1] - indexPt[1]);
+
+  const isPinching = pinchDist < pinchThreshold;
+  const pinchCenter = [(thumbPt[0] + indexPt[0]) / 2, (thumbPt[1] + indexPt[1]) / 2];
+
+  // Pinch progress interpolation (0 to 1)
+  const targetPinchProgress = Math.max(0, Math.min(1, 1 - (pinchDist - pinchThreshold * 0.6) / (pinchThreshold * 0.8)));
+  pinchProgress += (targetPinchProgress - pinchProgress) * 0.4;
+
+  if (dragMode === 'follow') {
+    // Follow index fingertip directly
+    target.x = Math.max(0, Math.min(1 - target.w, (indexPt[0] - (target.w * W) / 2) / W));
+    target.y = Math.max(0, Math.min(1 - target.h, (indexPt[1] - (target.h * H) / 2) / H));
+    hintText.textContent = '☝️ กล่องฟิลเตอร์กำลังเลื่อนตามปลายนิ้วชี้';
+  } else {
+    // Pinch-to-Drag Mode
+    const grabMargin = 70;
+    const isOverBox = (
+      pinchCenter[0] >= boxPixel.x - grabMargin &&
+      pinchCenter[0] <= boxPixel.x + boxPixel.w + grabMargin &&
+      pinchCenter[1] >= boxPixel.y - grabMargin &&
+      pinchCenter[1] <= boxPixel.y + boxPixel.h + grabMargin
+    );
+
+    if (isPinching) {
+      if (!isHandDragging && (isOverBox || handsData.length === 1)) {
+        // Start Dragging
+        isHandDragging = true;
+        handDragOffset = {
+          x: target.x - pinchCenter[0] / W,
+          y: target.y - pinchCenter[1] / H
+        };
+        addParticles(pinchCenter[0], pinchCenter[1], '#ffb703', 14);
+        if (performance.now() - lastGrabSoundTime > 300) {
+          playBeep('grab');
+          lastGrabSoundTime = performance.now();
+        }
+      }
+
+      if (isHandDragging) {
+        statusDot.className = 'status-dot grabbing';
+        statusText.textContent = '✊ กำลังลากกล่องฟิลเตอร์';
+        hintText.textContent = '✊ ลากฟิลเตอร์อยู่! กางนิ้วออกเพื่อปล่อย';
+        target.x = Math.max(0, Math.min(1 - target.w, pinchCenter[0] / W + handDragOffset.x));
+        target.y = Math.max(0, Math.min(1 - target.h, pinchCenter[1] / H + handDragOffset.y));
+      }
+    } else {
+      if (isHandDragging) {
+        // Release Dragging
+        isHandDragging = false;
+        playBeep('release');
+        addParticles(pinchCenter[0], pinchCenter[1], '#00f2fe', 10);
+      }
+      hintText.textContent = isOverBox
+        ? '👌 แตะนิ้วเร็ว ๆ = เปลี่ยนฟิลเตอร์ | จีบค้างแล้วลาก = ย้ายกล่อง'
+        : 'นำนิ้วชี้ไปแตะที่กรอบแล้วจีบนิ้วเพื่อจับลาก';
+    }
+  }
+}
+
+// ----------------- Render Overlay HUD Graphics -----------------
+function renderHUD() {
+  const r = { x: rect.x * W, y: rect.y * H, w: rect.w * W, h: rect.h * H };
+  const filterNames = [
+    'HALFTONE POP',
+    'CYBER SCANLINE',
+    'RETRO 8-BIT',
+    'THERMAL GLITCH',
+    'MATRIX NEON',
+    'RGB SPLIT'
+  ];
+  const activeColor = isHandDragging ? '#ffb703' : '#00f2fe';
+
+  // 1. Draw Filter Frame Borders & Corner Brackets
+  ctx.save();
+  ctx.strokeStyle = activeColor;
+  ctx.lineWidth = isHandDragging ? 2.5 : 1.5;
+  ctx.shadowColor = activeColor;
+  ctx.shadowBlur = isHandDragging ? 18 : 8;
+
+  // Box border
+  ctx.strokeRect(r.x, r.y, r.w, r.h);
+
+  // Futuristic corner brackets (L-shapes)
+  const cLen = Math.min(32, Math.min(r.w, r.h) * 0.25);
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  // Top-Left
+  ctx.moveTo(r.x, r.y + cLen); ctx.lineTo(r.x, r.y); ctx.lineTo(r.x + cLen, r.y);
+  // Top-Right
+  ctx.moveTo(r.x + r.w - cLen, r.y); ctx.lineTo(r.x + r.w, r.y); ctx.lineTo(r.x + r.w, r.y + cLen);
+  // Bottom-Left
+  ctx.moveTo(r.x, r.y + r.h - cLen); ctx.lineTo(r.x, r.y + r.h); ctx.lineTo(r.x + cLen, r.y + r.h);
+  // Bottom-Right
+  ctx.moveTo(r.x + r.w - cLen, r.y + r.h); ctx.lineTo(r.x + r.w, r.y + r.h); ctx.lineTo(r.x + r.w, r.y + r.h - cLen);
+  ctx.stroke();
+
+  // Resize handle indicator at bottom-right corner
+  ctx.fillStyle = activeColor;
+  ctx.beginPath();
+  ctx.arc(r.x + r.w - 6, r.y + r.h - 6, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Top header tag
+  ctx.font = '600 11px "JetBrains Mono", monospace';
+  const tagText = `[ ${filterNames[mode]} ] ${isHandDragging ? '• ✊ DRAGGING' : ''}`;
+  const tagMetrics = ctx.measureText(tagText);
+  const tagW = tagMetrics.width + 16, tagH = 22;
+
+  ctx.fillStyle = 'rgba(6, 8, 15, 0.85)';
+  ctx.fillRect(r.x, r.y - tagH - 4, tagW, tagH);
+  ctx.strokeStyle = activeColor;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(r.x, r.y - tagH - 4, tagW, tagH);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(tagText, r.x + 8, r.y - 10);
+
+  // Subtle Center Crosshair
+  const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.lineWidth = 1;
+  ctx.shadowBlur = 0;
+  ctx.beginPath();
+  ctx.moveTo(cx - 10, cy); ctx.lineTo(cx + 10, cy);
+  ctx.moveTo(cx, cy - 10); ctx.lineTo(cx, cy + 10);
+  ctx.stroke();
+  ctx.restore();
+
+  // 2. Draw Fingertip HUD Reticles
+  if (handsData.length > 0) {
+    handsData.forEach((hand, hIdx) => {
+      const idx = toCanvas(hand[8].x, hand[8].y);
+      const thb = toCanvas(hand[4].x, hand[4].y);
+      const pCenter = [(idx[0] + thb[0]) / 2, (thb[1] + idx[1]) / 2];
+
+      ctx.save();
+      // Laser link between index tip & thumb tip
+      ctx.strokeStyle = isHandDragging ? 'rgba(255, 183, 3, 0.7)' : 'rgba(0, 242, 254, 0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(thb[0], thb[1]);
+      ctx.lineTo(idx[0], idx[1]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Tether line connecting pinch point to filter box during drag
+      if (isHandDragging && hIdx === 0) {
+        ctx.strokeStyle = 'rgba(255, 183, 3, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(pCenter[0], pCenter[1]);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+      }
+
+      // Draw Thumb Reticle
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.beginPath();
+      ctx.arc(thb[0], thb[1], 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw Index Fingertip Cyber Reticle
+      const reticleColor = isHandDragging ? '#ffb703' : '#00f2fe';
+      ctx.strokeStyle = reticleColor;
+      ctx.shadowColor = reticleColor;
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = 2;
+
+      // Outer animated ring
+      const ringRadius = 14 + (1 - pinchProgress) * 8;
+      ctx.beginPath();
+      ctx.arc(idx[0], idx[1], ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Center solid core
+      ctx.fillStyle = reticleColor;
+      ctx.beginPath();
+      ctx.arc(idx[0], idx[1], 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Fingertip Label
+      ctx.font = '600 10px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowBlur = 4;
+      ctx.fillText(isHandDragging ? '✊ GRABBED' : '☝️ INDEX', idx[0] + 18, idx[1] + 4);
+      ctx.restore();
+    });
+  }
+
+  // วงนับเวลาของท่ามือ (ปัก / ล้าง)
+  if (gest.kind && gest.prog > 0 && !gest.latched) {
+    const col = gest.kind === 'point' ? '#10b981' : '#ff0055';
+    ctx.save();
+    ctx.strokeStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 10; ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(gest.at[0], gest.at[1], 30, -Math.PI / 2, -Math.PI / 2 + gest.prog * Math.PI * 2);
+    ctx.stroke();
+    ctx.font = '700 11px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#fff'; ctx.shadowBlur = 4;
+    ctx.fillText(gest.kind === 'point' ? '📌 PIN' : '🧹 CLEAR', gest.at[0] + 38, gest.at[1] - 24);
+    ctx.restore();
+  }
+
+  // 3. Render Particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vx *= 0.94; p.vy *= 0.94;
+    p.life -= p.decay;
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+      continue;
+    }
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ----------------- Main Animation Loop -----------------
+function frame(now) {
+  requestAnimationFrame(frame);
+
+  if (isDemoMode) {
+    // Generate animated synthetic demonstration video
+    demoTime += 0.02;
+    bctx.fillStyle = '#0a1020';
+    bctx.fillRect(0, 0, W, H);
+
+    // Animated geometric shapes and gradient orbs
+    const grad = bctx.createRadialGradient(W / 2 + Math.cos(demoTime) * 120, H / 2 + Math.sin(demoTime) * 90, 50, W / 2, H / 2, Math.max(W, H) * 0.7);
+    grad.addColorStop(0, '#1a3060');
+    grad.addColorStop(0.5, '#0e1830');
+    grad.addColorStop(1, '#05070c');
+    bctx.fillStyle = grad;
+    bctx.fillRect(0, 0, W, H);
+
+    // Glowing demo avatar circles
+    bctx.save();
+    bctx.fillStyle = '#00f2fe';
+    bctx.shadowColor = '#00f2fe';
+    bctx.shadowBlur = 30;
+    bctx.beginPath();
+    bctx.arc(W / 2, H / 2 - 40, 70, 0, Math.PI * 2);
+    bctx.fill();
+
+    bctx.fillStyle = '#ff0055';
+    bctx.shadowColor = '#ff0055';
+    bctx.beginPath();
+    bctx.arc(W / 2 + Math.sin(demoTime * 2) * 180, H / 2 + Math.cos(demoTime * 2) * 120, 40, 0, Math.PI * 2);
+    bctx.fill();
+    bctx.restore();
+
+    ctx.drawImage(base, 0, 0);
+  } else {
+    if (vid.readyState < 2) return;
+    const vw = vid.videoWidth, vh = vid.videoHeight, k = Math.max(W / vw, H / vh);
+    bctx.save();
+    if (mirror) {
+      bctx.translate(W, 0);
+      bctx.scale(-1, 1);
+    }
+    bctx.drawImage(vid, (W - vw * k) / 2, (H - vh * k) / 2, vw * k, vh * k);
+    bctx.restore();
+    ctx.drawImage(base, 0, 0);
+    processHands();
+  }
+
+  // Smooth Box Interpolation
+  for (const p of ['x', 'y', 'w', 'h']) {
+    rect[p] += (target[p] - rect[p]) * 0.35;
+  }
+
+  // Auto filter cycling
+  if (auto && now - lastSwitch > 3500) {
+    mode = (mode + 1) % 6;
+    lastSwitch = now;
+    syncBtns();
+    playBeep('switch');
+  }
+
+  // Multi-panel mode
+  if (panels) {
+    effect(0, W * 0.16, H * 0.08, W * 0.55, H * 0.62);
+    effect(1, W * 0.36, 0, W * 0.24, H * 0.78);
+  }
+
+  // ฟิลเตอร์ที่ปักค้างไว้
+  for (const q of pinned) {
+    effect(q.m, q.x * W, q.y * H, q.w * W, q.h * H);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(q.x * W, q.y * H, q.w * W, q.h * H);
+    ctx.restore();
+  }
+
+  // Render Active Filter Box
+  const r = { x: rect.x * W, y: rect.y * H, w: rect.w * W, h: rect.h * H };
+  effect(mode, r.x, r.y, r.w, r.h);
+
+  // Render Futuristic HUD Graphics
+  renderHUD();
+}
+
+// ----------------- UI Synchronization -----------------
+function syncBtns() {
+  document.querySelectorAll('[data-m]').forEach(b => {
+    b.classList.toggle('on', +b.dataset.m === mode);
+  });
+  document.querySelectorAll('[data-drag]').forEach(b => {
+    b.classList.toggle('on', b.dataset.drag === dragMode);
+  });
+  $('#auto').classList.toggle('on', auto);
+  $('#pan').classList.toggle('on', panels);
+  $('#mirror-btn').classList.toggle('active', mirror);
+  $('#sound-btn').classList.toggle('active', soundEnabled);
+  const cb = $('#clear-btn'); if (cb) cb.textContent = `🧹 ล้าง (${pinned.length})`;
+}
+
+// Filter button clicks
+document.querySelectorAll('[data-m]').forEach(b => {
+  b.addEventListener('click', () => {
+    mode = +b.dataset.m;
+    auto = false;
+    syncBtns();
+    playBeep('switch');
+  });
+});
+
+// Drag Mode button clicks
+document.querySelectorAll('[data-drag]').forEach(b => {
+  b.addEventListener('click', () => {
+    dragMode = b.dataset.drag;
+    syncBtns();
+    playBeep('switch');
+  });
+});
+
+// Size presets
+document.querySelectorAll('[data-sz]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-sz]').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    const sz = b.dataset.sz;
+    if (sz === 's') { target.w = 0.25; target.h = 0.32; }
+    else if (sz === 'm') { target.w = 0.38; target.h = 0.48; }
+    else if (sz === 'l') { target.w = 0.55; target.h = 0.65; }
+    target.x = Math.max(0, Math.min(1 - target.w, target.x));
+    target.y = Math.max(0, Math.min(1 - target.h, target.y));
+    playBeep('switch');
+  });
+});
+
+$('#pin-btn').addEventListener('click', () => { initAudio(); pinCurrent(); });
+$('#clear-btn').addEventListener('click', () => { initAudio(); clearPinned(); });
+$('#auto').addEventListener('click', () => { auto = !auto; syncBtns(); playBeep('switch'); });
+$('#pan').addEventListener('click', () => { panels = !panels; syncBtns(); playBeep('switch'); });
+
+// Top bar icon clicks
+$('#mirror-btn').addEventListener('click', () => {
+  mirror = !mirror;
+  syncBtns();
+  playBeep('switch');
+});
+
+$('#sound-btn').addEventListener('click', () => {
+  initAudio();
+  soundEnabled = !soundEnabled;
+  syncBtns();
+});
+
+$('#fs-btn').addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+});
+
+// Snapshot Capture
+$('#snap-btn').addEventListener('click', () => {
+  playBeep('shutter');
+  const flash = $('#flash');
+  flash.classList.add('flash-active');
+  setTimeout(() => flash.classList.remove('flash-active'), 180);
+
+  setTimeout(() => {
+    const a = document.createElement('a');
+    a.download = `finger-frame-${Date.now()}.png`;
+    a.href = cv.toDataURL('image/png');
+    a.click();
+  }, 100);
+});
+
+// Keyboard shortcuts
+addEventListener('keydown', e => {
+  if ('123456'.includes(e.key)) {
+    mode = +e.key - 1;
+    auto = false;
+    syncBtns();
+    playBeep('switch');
+  }
+  if (e.key === 'a' || e.key === 'A') { auto = !auto; syncBtns(); }
+  if (e.key === 'p' || e.key === 'P') { panels = !panels; syncBtns(); }
+  if (e.key === 'm' || e.key === 'M') { mirror = !mirror; syncBtns(); }
+  if (e.key === 'f' || e.key === 'F') pinCurrent();
+  if (e.key === 'c' || e.key === 'C') clearPinned();
+  if (e.key === ' ') {
+    dragMode = (dragMode === 'pinch') ? 'follow' : 'pinch';
+    syncBtns();
+  }
+});
+
+// ----------------- Pointer (Mouse / Touch) Interaction -----------------
+cv.addEventListener('pointerdown', e => {
+  initAudio();
+  mouseUntil = performance.now() + 2500;
+  const mx = e.clientX, my = e.clientY;
+  const boxL = rect.x * W, boxT = rect.y * H, boxR = boxL + rect.w * W, boxB = boxT + rect.h * H;
+
+  // Check if clicking near bottom-right resize corner
+  const cornerDist = Math.hypot(mx - boxR, my - boxB);
+  if (cornerDist < 30) {
+    pointerDrag = {
+      type: 'resize',
+      startX: mx, startY: my,
+      origW: target.w, origH: target.h
+    };
+    cv.classList.add('dragging');
+    playBeep('grab');
+    return;
+  }
+
+  // Check if clicking inside box to move
+  if (mx >= boxL && mx <= boxR && my >= boxT && my <= boxB) {
+    pointerDrag = {
+      type: 'move',
+      startX: mx, startY: my,
+      origX: target.x, origY: target.y
+    };
+    cv.classList.add('dragging');
+    playBeep('grab');
+    return;
+  }
+
+  // Clicking outside starts a new box selection
+  pointerDrag = {
+    type: 'create',
+    startX: mx, startY: my
+  };
+});
+
+cv.addEventListener('pointermove', e => {
+  if (!pointerDrag) return;
+  mouseUntil = performance.now() + 2500;
+
+  if (pointerDrag.type === 'move') {
+    const dx = (e.clientX - pointerDrag.startX) / W;
+    const dy = (e.clientY - pointerDrag.startY) / H;
+    target.x = Math.max(0, Math.min(1 - target.w, pointerDrag.origX + dx));
+    target.y = Math.max(0, Math.min(1 - target.h, pointerDrag.origY + dy));
+  } else if (pointerDrag.type === 'resize') {
+    const dw = (e.clientX - pointerDrag.startX) / W;
+    const dh = (e.clientY - pointerDrag.startY) / H;
+    target.w = Math.max(0.1, Math.min(1 - target.x, pointerDrag.origW + dw));
+    target.h = Math.max(0.1, Math.min(1 - target.y, pointerDrag.origH + dh));
+  } else if (pointerDrag.type === 'create') {
+    target.x = Math.min(pointerDrag.startX, e.clientX) / W;
+    target.y = Math.min(pointerDrag.startY, e.clientY) / H;
+    target.w = Math.max(0.08, Math.abs(e.clientX - pointerDrag.startX) / W);
+    target.h = Math.max(0.08, Math.abs(e.clientY - pointerDrag.startY) / H);
+  }
+});
+
+addEventListener('pointerup', () => {
+  if (pointerDrag) {
+    cv.classList.remove('dragging');
+    pointerDrag = null;
+    playBeep('release');
+  }
+});
+
+// Mouse wheel zooms box size
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -0.03 : 0.03;
+  target.w = Math.max(0.12, Math.min(0.9, target.w + delta));
+  target.h = Math.max(0.12, Math.min(0.9, target.h + delta * 1.2));
+  target.x = Math.max(0, Math.min(1 - target.w, target.x));
+  target.y = Math.max(0, Math.min(1 - target.h, target.y));
+}, { passive: false });
+
+// ----------------- MediaPipe HandLandmarker Loader -----------------
+async function loadHands() {
+  const hintText = $('#hint-text');
+  const statusText = $('#status-text');
+  try {
+    hintText.textContent = 'กำลังโหลดโมเดล AI ตรวจจับนิ้วมือ...';
+    statusText.textContent = 'กำลังโหลด AI...';
+
+    const { HandLandmarker, FilesetResolver } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
+    const fs = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+
+    try {
+      // Try GPU acceleration first
+      landmarker = await HandLandmarker.createFromOptions(fs, {
+        baseOptions: {
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+          delegate: 'GPU'
+        },
+        runningMode: 'VIDEO',
+        numHands: 2
+      });
+    } catch (gpuError) {
+      console.warn('GPU delegate fallback to CPU:', gpuError);
+      // Fallback to CPU delegate if GPU not supported
+      landmarker = await HandLandmarker.createFromOptions(fs, {
+        baseOptions: {
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+          delegate: 'CPU'
+        },
+        runningMode: 'VIDEO',
+        numHands: 2
+      });
+    }
+
+    hintText.textContent = 'จับปลายนิ้วพร้อมแล้ว! แตะนิ้วเร็ว ๆ เพื่อเปลี่ยนฟิลเตอร์ จีบค้างเพื่อลากกล่อง';
+    statusText.textContent = 'AI พร้อมตรวจจับนิ้วมือ';
+    $('#status-indicator').className = 'status-dot active';
+    playBeep('switch');
+  } catch (err) {
+    console.error('HandLandmarker error:', err);
+    hintText.textContent = 'โหลดโมเดลจับมือไม่ได้ — สามารถใช้เมาส์/ทัชลากกรอบแทนได้';
+    statusText.textContent = 'โหมดควบคุมด้วยเมาส์';
+  }
+}
+
+// ----------------- Camera Startup -----------------
+$('#go').addEventListener('click', async () => {
+  initAudio();
+  const msg = $('#msg');
+  msg.textContent = 'กำลังเปิดกล้อง...';
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        facingMode: 'user'
+      },
+      audio: false
+    });
+    vid.srcObject = stream;
+    await vid.play();
+
+    $('#start').style.display = 'none';
+    $('#top-hud').style.display = 'flex';
+    $('#bar').style.display = 'flex';
+    syncBtns();
+
+    requestAnimationFrame(frame);
+    loadHands();
+  } catch (err) {
+    console.error('Camera open error:', err);
+    msg.innerHTML = `เปิดกล้องไม่ได้: กรุณาอนุญาตให้เว็บไซต์เข้าถึงกล้องในเบราว์เซอร์ หรือปิดแอปอื่นที่ใช้กล้องอยู่<br><br>
+    <button id="fallback-demo" style="background:#00f2fe; color:#06080f; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">
+      👉 เข้าสู่โหมดทดสอบทันที (ไม่ต้องใช้กล้อง)
+    </button>`;
+    $('#fallback-demo')?.addEventListener('click', startDemo);
+  }
+});
+
+// Demo Mode Handler
+function startDemo() {
+  initAudio();
+  isDemoMode = true;
+  $('#start').style.display = 'none';
+  $('#top-hud').style.display = 'flex';
+  $('#bar').style.display = 'flex';
+  syncBtns();
+  $('#status-text').textContent = 'โหมดทดสอบ (ลากเมาส์ได้)';
+  $('#hint-text').textContent = 'คลิกลากกล่องฟิลเตอร์ หรือลากมุมขวาล่างเพื่อย่อ-ขยาย';
+  $('#status-indicator').className = 'status-dot active';
+  requestAnimationFrame(frame);
+}
+$('#demo-btn').addEventListener('click', startDemo);
+</script>
+</body>
+</html>
